@@ -1,0 +1,17 @@
+# Increase main task stack: ML-KEM key generation and encapsulation use significant
+# stack for intermediate polynomial vectors (polyvec_t ~ 1 KB each, multiple live at once).
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=32768
+
+# 240 MHz for maximum benchmark throughput on WROOM-32D (supports up to 240 MHz)
+CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ_240=y
+
+# Extend task watchdog timeout well past the worst-case benchmark duration.
+# 1000 decaps iterations at ~5 ms each = 5 s; 60 s gives comfortable headroom.
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=60
+
+# UART0 log output — keep defaults but raise TX buffer so bulk CSV output does not block.
+CONFIG_ESP32_UART_DEFAULT_TX_RING_BUFFER_SIZE=1024
+
+# Show Info-level logs and above during benchmarking.
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+CONFIG_LOG_DEFAULT_LEVEL=3

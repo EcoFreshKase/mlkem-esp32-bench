@@ -1,0 +1,30 @@
+# ESP-IDF build artefacts
+build/
+sdkconfig
+sdkconfig.old
+
+data/
+
+# Managed components cache (idf-component-manager)
+managed_components/
+dependencies.lock
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+
+# Flash download tool sessions
+*.bin
+*.elf
+*.map

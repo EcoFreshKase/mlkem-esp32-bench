@@ -145,6 +145,14 @@ and add it as a component.
 
 ---
 
+## Third-party code and credits
+
+| Component | Files | Origin | Authors / Licence |
+|-----------|-------|--------|-------------------|
+| FIPS 202 (SHA-3 / SHAKE) | `src/components/fips202/fips202.{c,h}` | [pq-crystals/kyber](https://github.com/pq-crystals/kyber) reference implementation | Taken directly from the ML-KEM (Kyber) reference implementation by the pq-crystals team. The implementation is itself derived from two earlier public-domain works: the `crypto_hash/keccakc512/simple/` entry from the [SUPERCOP](https://bench.cr.yp.to/supercop.html) benchmark suite by **Ronny Van Keer**, and the [TweetFips202](https://twitter.com/tweetfips202) implementation by **Gilles Van Assche**, **Daniel J. Bernstein**, and **Peter Schwabe**. All three sources are released into the public domain. |
+
+---
+
 ## Stack sizing
 
 `polyvec_t` (k=2 polynomials × 256 × 2 bytes) is 1 024 bytes.  KeyGen and Encaps

@@ -14,6 +14,7 @@
  * ML-KEM.KeyGen — Algorithm 19
  *
  * Generates an encapsulation key (ek) and a decapsulation key (dk).
+ * Internally samples random seeds d and z.
  *
  * @param[out] ek   Encapsulation key, MLKEM512_EKBYTES (800) bytes.
  * @param[out] dk   Decapsulation key, MLKEM512_DKBYTES (1632) bytes.
@@ -21,6 +22,23 @@
  */
 int mlkem512_keygen(uint8_t ek[MLKEM512_EKBYTES],
                     uint8_t dk[MLKEM512_DKBYTES]);
+
+/**
+ * ML-KEM.KeyGen internal — deterministic form of Algorithm 19
+ *
+ * Same as mlkem512_keygen but uses caller-supplied seeds d and z instead of
+ * sampling them randomly.  Use this for KAT tests.
+ *
+ * @param[out] ek   Encapsulation key, MLKEM512_EKBYTES (800) bytes.
+ * @param[out] dk   Decapsulation key, MLKEM512_DKBYTES (1632) bytes.
+ * @param[in]  d    32-byte seed d.
+ * @param[in]  z    32-byte seed z.
+ * @return 0 on success.
+ */
+int mlkem512_keygen_internal(uint8_t ek[MLKEM512_EKBYTES],
+                             uint8_t dk[MLKEM512_DKBYTES],
+                             const uint8_t d[32],
+                             const uint8_t z[32]);
 
 /**
  * ML-KEM.Encaps — Algorithm 20

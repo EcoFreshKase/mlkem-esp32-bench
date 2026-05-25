@@ -13,11 +13,26 @@
  *  7. ek = ByteEncode_{12}(t_hat) || rho          (800 bytes).
  *  8. dk = ByteEncode_{12}(s_hat) || ek || H(ek) || z  (1632 bytes).
  */
-int mlkem512_keygen(uint8_t ek[MLKEM512_EKBYTES],
-                    uint8_t dk[MLKEM512_DKBYTES])
+int mlkem512_keygen_internal(uint8_t ek[MLKEM512_EKBYTES],
+                             uint8_t dk[MLKEM512_DKBYTES],
+                             const uint8_t d[32],
+                             const uint8_t z[32])
 {
     /* TODO: implement per FIPS 203 Algorithm 19 */
     (void)ek;
     (void)dk;
+    (void)d;
+    (void)z;
     return 0;
+}
+
+int mlkem512_keygen(uint8_t ek[MLKEM512_EKBYTES],
+                    uint8_t dk[MLKEM512_DKBYTES])
+{
+    uint8_t d[32];
+    uint8_t z[32];
+    /* TODO: fill d and z with a cryptographically secure random source */
+    (void)d;
+    (void)z;
+    return mlkem512_keygen_internal(ek, dk, d, z);
 }

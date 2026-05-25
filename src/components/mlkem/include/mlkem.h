@@ -20,8 +20,7 @@
  * @param[out] dk   Decapsulation key, MLKEM512_DKBYTES (1632) bytes.
  * @return 0 on success.
  */
-int mlkem512_keygen(uint8_t ek[MLKEM512_EKBYTES],
-                    uint8_t dk[MLKEM512_DKBYTES]);
+int mlkem512_keygen(uint8_t ek[MLKEM512_EKBYTES], uint8_t dk[MLKEM512_DKBYTES]);
 
 /**
  * ML-KEM.KeyGen internal — deterministic form of Algorithm 19
@@ -35,10 +34,12 @@ int mlkem512_keygen(uint8_t ek[MLKEM512_EKBYTES],
  * @param[in]  z    32-byte seed z.
  * @return 0 on success.
  */
-int mlkem512_keygen_internal(uint8_t ek[MLKEM512_EKBYTES],
-                             uint8_t dk[MLKEM512_DKBYTES],
-                             const uint8_t d[32],
-                             const uint8_t z[32]);
+int mlkem512_keygen_internal(
+    uint8_t ek[MLKEM512_EKBYTES],
+    uint8_t dk[MLKEM512_DKBYTES],
+    const uint8_t d[32],
+    const uint8_t z[32]
+);
 
 /**
  * ML-KEM.Encaps — Algorithm 20
@@ -50,9 +51,9 @@ int mlkem512_keygen_internal(uint8_t ek[MLKEM512_EKBYTES],
  * @param[in]  ek   Encapsulation key, MLKEM512_EKBYTES (800) bytes.
  * @return 0 on success.
  */
-int mlkem512_encaps(uint8_t ct[MLKEM512_CTBYTES],
-                    uint8_t ss[MLKEM512_SSBYTES],
-                    const uint8_t ek[MLKEM512_EKBYTES]);
+int mlkem512_encaps(
+    uint8_t ct[MLKEM512_CTBYTES], uint8_t ss[MLKEM512_SSBYTES], const uint8_t ek[MLKEM512_EKBYTES]
+);
 
 /**
  * ML-KEM.Decaps — Algorithm 21
@@ -65,6 +66,8 @@ int mlkem512_encaps(uint8_t ct[MLKEM512_CTBYTES],
  * @param[in]  dk   Decapsulation key, MLKEM512_DKBYTES (1632) bytes.
  * @return 0 on success.
  */
-int mlkem512_decaps(uint8_t ss[MLKEM512_SSBYTES],
-                    const uint8_t ct[MLKEM512_CTBYTES],
-                    const uint8_t dk[MLKEM512_DKBYTES]);
+int mlkem512_decaps(
+    uint8_t ss[MLKEM512_SSBYTES],
+    const uint8_t ct[MLKEM512_CTBYTES],
+    const uint8_t dk[MLKEM512_DKBYTES]
+);

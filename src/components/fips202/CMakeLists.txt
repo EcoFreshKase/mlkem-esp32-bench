@@ -1,4 +1,4 @@
-file(GLOB FIPS202_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/*.c")
+file(GLOB FIPS202_SRCS "fips202.c" "${CMAKE_CURRENT_SOURCE_DIR}/*.c")
 
 idf_component_register(
     SRCS ${FIPS202_SRCS}

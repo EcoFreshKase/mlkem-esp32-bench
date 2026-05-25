@@ -15,10 +15,9 @@
  *       f. ct = Compress_{du}(u) || Compress_{dv}(v).
  *  4. ss = K.
  */
-int mlkem512_encaps(uint8_t ct[MLKEM512_CTBYTES],
-                    uint8_t ss[MLKEM512_SSBYTES],
-                    const uint8_t ek[MLKEM512_EKBYTES])
-{
+int mlkem512_encaps(
+    uint8_t ct[MLKEM512_CTBYTES], uint8_t ss[MLKEM512_SSBYTES], const uint8_t ek[MLKEM512_EKBYTES]
+) {
     /* TODO: implement per FIPS 203 Algorithm 20 */
     (void)ct;
     (void)ss;

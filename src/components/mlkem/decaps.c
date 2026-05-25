@@ -15,10 +15,11 @@
  *  5. ct' = K-PKE.Encrypt(ek, m', r').
  *  6. ss = K'  if ct == ct' (constant-time),  else ss = K_bar.
  */
-int mlkem512_decaps(uint8_t ss[MLKEM512_SSBYTES],
-                    const uint8_t ct[MLKEM512_CTBYTES],
-                    const uint8_t dk[MLKEM512_DKBYTES])
-{
+int mlkem512_decaps(
+    uint8_t ss[MLKEM512_SSBYTES],
+    const uint8_t ct[MLKEM512_CTBYTES],
+    const uint8_t dk[MLKEM512_DKBYTES]
+) {
     /* TODO: implement per FIPS 203 Algorithm 21 */
     (void)ss;
     (void)ct;

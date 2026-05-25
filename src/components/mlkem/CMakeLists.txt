@@ -1,4 +1,4 @@
-file(GLOB MLKEM_SRCS "keygen.c" "${CMAKE_CURRENT_SOURCE_DIR}/*.c")
+file(GLOB MLKEM_SRCS "encaps.c" "decaps.c" "compression_util.c" "keygen.c" "${CMAKE_CURRENT_SOURCE_DIR}/*.c")
 
 idf_component_register(
     SRCS ${MLKEM_SRCS}

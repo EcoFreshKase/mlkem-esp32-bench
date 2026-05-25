@@ -6,8 +6,7 @@
 
 static const char *TAG = "main";
 
-void app_main(void)
-{
+void app_main(void) {
     ESP_LOGI(TAG, "=== ML-KEM-512 Benchmark ===");
     ESP_LOGI(TAG, "ESP32-WROOM-32D  |  iterations: %d", BENCH_MEASURE_ITERS);
 

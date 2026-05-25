@@ -4,16 +4,16 @@
 
 /* Number of warm-up iterations run before timing begins.
  * These fill I-cache and branch predictors without contributing to statistics. */
-#define BENCH_WARMUP_ITERS   10
+#define BENCH_WARMUP_ITERS 10
 
 /* Number of timed iterations for each ML-KEM operation. */
-#define BENCH_MEASURE_ITERS  1000
+#define BENCH_MEASURE_ITERS 1000
 
 /* ESP32-WROOM-32D default CPU frequency (MHz).
  * Must match CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ_240 in sdkconfig.defaults.
  * Override at build time: -DBENCH_CPU_FREQ_MHZ=160 */
 #ifndef BENCH_CPU_FREQ_MHZ
-#define BENCH_CPU_FREQ_MHZ   240
+#define BENCH_CPU_FREQ_MHZ 240
 #endif
 
 /* -----------------------------------------------------------------------

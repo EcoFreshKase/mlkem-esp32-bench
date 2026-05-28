@@ -65,6 +65,131 @@ static void test_ntt_convolution(void) {
         ESP_LOGE(TAG, "NTT convolution FAIL (mul=%d wrap=%d)", ok, ok_wrap);
 }
 
+/* ByteEncode_12 ∘ ByteDecode_12 must be the identity for coeffs in [0, q),
+ * at both the poly and polyvec level. */
+static void test_poly_encode_roundtrip(void) {
+    poly_t p, q;
+    uint8_t bytes[MLKEM_POLYBYTES];
+    for (int i = 0; i < MLKEM_N; i++) {
+        p.coeffs[i] = (int16_t)(i % MLKEM_Q);
+    }
+    poly_tobytes(bytes, &p);
+    poly_frombytes(&q, bytes);
+
+    int ok = (memcmp(p.coeffs, q.coeffs, sizeof(p.coeffs)) == 0);
+
+    polyvec_t pv, qv;
+    uint8_t vbytes[MLKEM512_K * MLKEM_POLYBYTES];
+    for (int v = 0; v < MLKEM512_K; v++) {
+        for (int i = 0; i < MLKEM_N; i++) {
+            pv.vec[v].coeffs[i] = (int16_t)((i * (v + 1)) % MLKEM_Q);
+        }
+    }
+    polyvec_tobytes(vbytes, &pv);
+    polyvec_frombytes(&qv, vbytes);
+    for (int v = 0; v < MLKEM512_K && ok; v++) {
+        if (memcmp(pv.vec[v].coeffs, qv.vec[v].coeffs, sizeof(pv.vec[v].coeffs)) != 0)
+            ok = 0;
+    }
+
+    if (ok)
+        ESP_LOGI(TAG, "poly encode round-trip PASS");
+    else
+        ESP_LOGE(TAG, "poly encode round-trip FAIL");
+}
+
+/* CBD on an all-zero PRF stream must produce the all-zero polynomial
+ * (every (a - b) pair is 0 - 0). */
+static void test_poly_cbd_zero(void) {
+    uint8_t buf1[MLKEM512_ETA1 * MLKEM_N / 4] = {0};
+    uint8_t buf2[MLKEM512_ETA2 * MLKEM_N / 4] = {0};
+    poly_t p1, p2;
+    poly_cbd_eta1(&p1, buf1);
+    poly_cbd_eta2(&p2, buf2);
+
+    int ok = 1;
+    for (int i = 0; i < MLKEM_N && ok; i++) {
+        if (p1.coeffs[i] != 0 || p2.coeffs[i] != 0)
+            ok = 0;
+    }
+
+    if (ok)
+        ESP_LOGI(TAG, "poly CBD zero PASS");
+    else
+        ESP_LOGE(TAG, "poly CBD zero FAIL");
+}
+
+/* Decompress(Compress(x, d)) must stay within the FIPS 203 error bound
+ * round(q / 2^(d+1)): 2 for du = 10, 104 for dv = 4. */
+static void test_poly_compress_bound(void) {
+    polyvec_t u, u2;
+    poly_t v, v2;
+    uint8_t ubytes[MLKEM512_DU * MLKEM512_K * MLKEM_N / 8];
+    uint8_t vbytes[MLKEM512_DV * MLKEM_N / 8];
+
+    for (int vec = 0; vec < MLKEM512_K; vec++) {
+        for (int i = 0; i < MLKEM_N; i++) {
+            u.vec[vec].coeffs[i] = (int16_t)((i * 13 + vec) % MLKEM_Q);
+        }
+    }
+    for (int i = 0; i < MLKEM_N; i++) {
+        v.coeffs[i] = (int16_t)((i * 7) % MLKEM_Q);
+    }
+
+    polyvec_compress_du(ubytes, &u);
+    polyvec_decompress_du(&u2, ubytes);
+    poly_compress_dv(vbytes, &v);
+    poly_decompress_dv(&v2, vbytes);
+
+    int ok = 1;
+    for (int vec = 0; vec < MLKEM512_K && ok; vec++) {
+        for (int i = 0; i < MLKEM_N && ok; i++) {
+            int diff = u2.vec[vec].coeffs[i] - u.vec[vec].coeffs[i];
+            if (diff > MLKEM_Q / 2)
+                diff -= MLKEM_Q;
+            if (diff < -MLKEM_Q / 2)
+                diff += MLKEM_Q;
+            if (diff < 0)
+                diff = -diff;
+            if (diff > 2)
+                ok = 0;
+        }
+    }
+    for (int i = 0; i < MLKEM_N && ok; i++) {
+        int diff = v2.coeffs[i] - v.coeffs[i];
+        if (diff > MLKEM_Q / 2)
+            diff -= MLKEM_Q;
+        if (diff < -MLKEM_Q / 2)
+            diff += MLKEM_Q;
+        if (diff < 0)
+            diff = -diff;
+        if (diff > 104)
+            ok = 0;
+    }
+
+    if (ok)
+        ESP_LOGI(TAG, "poly compress bound PASS");
+    else
+        ESP_LOGE(TAG, "poly compress bound FAIL");
+}
+
+/* poly_to_msg ∘ poly_from_msg must round-trip a 32-byte message exactly. */
+static void test_poly_msg_roundtrip(void) {
+    uint8_t msg[MLKEM512_SYMBYTES];
+    uint8_t out[MLKEM512_SYMBYTES];
+    poly_t p;
+    for (int i = 0; i < MLKEM512_SYMBYTES; i++) {
+        msg[i] = (uint8_t)(0xA5 ^ (i * 31));
+    }
+    poly_from_msg(&p, msg);
+    poly_to_msg(out, &p);
+
+    if (memcmp(msg, out, MLKEM512_SYMBYTES) == 0)
+        ESP_LOGI(TAG, "poly msg round-trip PASS");
+    else
+        ESP_LOGE(TAG, "poly msg round-trip FAIL");
+}
+
 /* TODO: populate with NIST ML-KEM-512 Known Answer Test (KAT) vectors. */
 static void test_mlkem512_keygen_vectors(void) {
     static const uint8_t expected_ek[MLKEM512_EKBYTES] = {
@@ -294,6 +419,10 @@ void run_mlkem512_tests(void) {
     ESP_LOGI(TAG, "=== ML-KEM-512 tests ===");
     test_ntt_roundtrip();
     test_ntt_convolution();
+    test_poly_encode_roundtrip();
+    test_poly_cbd_zero();
+    test_poly_compress_bound();
+    test_poly_msg_roundtrip();
     test_mlkem512_keygen_vectors();
     test_mlkem512_encaps_vectors();
     test_mlkem512_decaps_vectors();

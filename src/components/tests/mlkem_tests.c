@@ -2,9 +2,68 @@
 #include <string.h>
 #include "esp_log.h"
 #include "mlkem.h"
+#include "ntt.h"
 #include "params.h"
+#include "poly.h"
 
 static const char *TAG = "mlkem_test";
+
+/* InvNTT ∘ NTT must be the identity on coefficients in [0, q). */
+static void test_ntt_roundtrip(void) {
+    poly_t p, orig;
+    for (int i = 0; i < MLKEM_N; i++) {
+        p.coeffs[i] = (int16_t)(i % MLKEM_Q);
+    }
+    orig = p;
+
+    poly_ntt(&p);
+    poly_invntt(&p);
+
+    if (memcmp(p.coeffs, orig.coeffs, sizeof(orig.coeffs)) == 0)
+        ESP_LOGI(TAG, "NTT round-trip PASS");
+    else
+        ESP_LOGE(TAG, "NTT round-trip FAIL");
+}
+
+/* Multiply two polynomials via NTT·basemul·InvNTT and compare against the
+ * expected negacyclic product in Z_q[x]/(x^256 + 1).
+ *   x · x        = x^2          (no wrap)
+ *   x^255 · x    = x^256 = -1   (wraps to q-1 at coefficient 0) */
+static void test_ntt_convolution(void) {
+    poly_t a = {0}, b = {0}, r;
+
+    a.coeffs[1] = 1; /* a(x) = x     */
+    b.coeffs[1] = 1; /* b(x) = x     */
+    poly_ntt(&a);
+    poly_ntt(&b);
+    poly_basemul(&r, &a, &b);
+    poly_invntt(&r);
+
+    int ok = (r.coeffs[2] == 1);
+    for (int i = 0; i < MLKEM_N && ok; i++) {
+        if (i != 2 && r.coeffs[i] != 0)
+            ok = 0;
+    }
+
+    poly_t c = {0}, d = {0}, s;
+    c.coeffs[255] = 1; /* c(x) = x^255 */
+    d.coeffs[1] = 1;   /* d(x) = x     */
+    poly_ntt(&c);
+    poly_ntt(&d);
+    poly_basemul(&s, &c, &d);
+    poly_invntt(&s);
+
+    int ok_wrap = (s.coeffs[0] == MLKEM_Q - 1);
+    for (int i = 1; i < MLKEM_N && ok_wrap; i++) {
+        if (s.coeffs[i] != 0)
+            ok_wrap = 0;
+    }
+
+    if (ok && ok_wrap)
+        ESP_LOGI(TAG, "NTT convolution PASS");
+    else
+        ESP_LOGE(TAG, "NTT convolution FAIL (mul=%d wrap=%d)", ok, ok_wrap);
+}
 
 /* TODO: populate with NIST ML-KEM-512 Known Answer Test (KAT) vectors. */
 static void test_mlkem512_keygen_vectors(void) {
@@ -233,6 +292,8 @@ static void test_mlkem512_roundtrip(void) {
 
 void run_mlkem512_tests(void) {
     ESP_LOGI(TAG, "=== ML-KEM-512 tests ===");
+    test_ntt_roundtrip();
+    test_ntt_convolution();
     test_mlkem512_keygen_vectors();
     test_mlkem512_encaps_vectors();
     test_mlkem512_decaps_vectors();

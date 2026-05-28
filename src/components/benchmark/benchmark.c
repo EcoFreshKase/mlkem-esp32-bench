@@ -107,6 +107,6 @@ void bench_print_header(uint32_t cpu_mhz, uint32_t iterations) {
 void bench_run_all(uint32_t iterations) {
     bench_print_header(BENCH_CPU_FREQ_MHZ, iterations);
     bench_run_keygen(iterations);
-    // bench_run_encaps(iterations);
-    // bench_run_decaps(iterations);
+    bench_run_encaps(iterations);
+    bench_run_decaps(iterations);
 }

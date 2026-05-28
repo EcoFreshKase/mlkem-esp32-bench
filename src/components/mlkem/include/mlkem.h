@@ -56,6 +56,25 @@ int mlkem512_encaps(
 );
 
 /**
+ * ML-KEM.Encaps internal — deterministic form of Algorithm 20
+ *
+ * Same as mlkem512_encaps but uses the caller-supplied message m instead of
+ * sampling it randomly.  Use this for KAT tests.
+ *
+ * @param[out] ct   Ciphertext, MLKEM512_CTBYTES (768) bytes.
+ * @param[out] ss   Shared secret, MLKEM512_SSBYTES (32) bytes.
+ * @param[in]  ek   Encapsulation key, MLKEM512_EKBYTES (800) bytes.
+ * @param[in]  m    32-byte message m.
+ * @return 0 on success.
+ */
+int mlkem512_encaps_internal(
+    uint8_t ct[MLKEM512_CTBYTES],
+    uint8_t ss[MLKEM512_SSBYTES],
+    const uint8_t ek[MLKEM512_EKBYTES],
+    const uint8_t m[MLKEM512_SYMBYTES]
+);
+
+/**
  * ML-KEM.Decaps — Algorithm 21
  *
  * Recovers the shared secret from a ciphertext using the decapsulation key.

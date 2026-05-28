@@ -1,6 +1,7 @@
 #include <string.h>
 #include "esp_random.h"
 #include "fips202.h"
+#include "kpke.h"
 #include "mlkem.h"
 #include "ntt.h"
 #include "params.h"
@@ -11,7 +12,7 @@
 
 /* K-PKE.Encrypt — FIPS 203 Algorithm 14. Writes the 768-byte ciphertext
  * c = Compress_du(u) ‖ Compress_dv(v). */
-static void k_pke_encrypt(
+void k_pke_encrypt(
     uint8_t c[MLKEM512_CTBYTES],
     const uint8_t ek[MLKEM512_EKBYTES],
     const uint8_t m[MLKEM512_SYMBYTES],

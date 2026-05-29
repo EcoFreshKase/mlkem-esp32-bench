@@ -51,11 +51,30 @@ static void k_pke_decrypt(uint8_t m[MLKEM512_SYMBYTES], const uint8_t dk_pke[POL
     poly_to_msg(m, &w);
 }
 
+/* Decapsulation key check — FIPS 203 §7.3: length plus the hash check, where
+ * the embedded H(ek) must equal SHA3-256 of the embedded ek. The hash covers
+ * only public data, so a plain memcmp is fine here. */
+int mlkem512_check_dk(const uint8_t *dk, size_t dk_len) {
+    if (dk_len != MLKEM512_DKBYTES) {
+        return -1;
+    }
+    uint8_t h[MLKEM512_SYMBYTES];
+    sha3_256(h, dk + DK_EK_OFFSET, MLKEM512_EKBYTES);
+    if (memcmp(h, dk + DK_H_OFFSET, MLKEM512_SYMBYTES) != 0) {
+        return -1;
+    }
+    return 0;
+}
+
 int mlkem512_decaps(
     uint8_t ss[MLKEM512_SSBYTES],
     const uint8_t ct[MLKEM512_CTBYTES],
     const uint8_t dk[MLKEM512_DKBYTES]
 ) {
+    if (mlkem512_check_dk(dk, MLKEM512_DKBYTES) != 0) {
+        return -1;
+    }
+
     const uint8_t *dk_pke = dk;
     const uint8_t *ek = dk + DK_EK_OFFSET;
     const uint8_t *h = dk + DK_H_OFFSET;

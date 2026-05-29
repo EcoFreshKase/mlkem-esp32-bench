@@ -66,12 +66,33 @@ void k_pke_encrypt(
     poly_compress_dv(c + COMPRESSED_U, &v);
 }
 
+/* Encapsulation key check — FIPS 203 §7.2: length plus the modulus check.
+ * POLYVEC_BYTES bytes pack 2·256 twelve-bit coefficients, two per 3 bytes
+ * (little-endian); reject if any decodes to a value >= q. */
+int mlkem512_check_ek(const uint8_t *ek, size_t ek_len) {
+    if (ek_len != MLKEM512_EKBYTES) {
+        return -1;
+    }
+    for (size_t i = 0; i + 3 <= POLYVEC_BYTES; i += 3) {
+        uint16_t c0 = (uint16_t)(ek[i] | ((ek[i + 1] & 0x0F) << 8));
+        uint16_t c1 = (uint16_t)((ek[i + 1] >> 4) | (ek[i + 2] << 4));
+        if (c0 >= MLKEM_Q || c1 >= MLKEM_Q) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
 int mlkem512_encaps_internal(
     uint8_t ct[MLKEM512_CTBYTES],
     uint8_t ss[MLKEM512_SSBYTES],
     const uint8_t ek[MLKEM512_EKBYTES],
     const uint8_t m[MLKEM512_SYMBYTES]
 ) {
+    if (mlkem512_check_ek(ek, MLKEM512_EKBYTES) != 0) {
+        return -1;
+    }
+
     /* (K, r) = G(m ‖ H(ek)): K is the shared secret, r drives encryption.
      * Final FIPS 203 — no separate hash of m. */
     uint8_t g_in[2 * MLKEM512_SYMBYTES];

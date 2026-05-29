@@ -21,6 +21,12 @@ Vector layout (ML-KEM-512, all JSON values are hex strings):
     keygen : keyGen group        prompt {d,z}    -> expected {ek,dk}    (AFT, 25)
     encaps : encapDecap tgId 1   prompt {ek,m}   -> expected {c,k}      (AFT, 25)
     decaps : encapDecap tgId 4   prompt {dk,c}   -> expected {k}        (VAL, 10)
+    ekcheck: encapDecap tgId 8   prompt {ek}     -> expected {testPassed} (VAL, 10)
+    dkcheck: encapDecap tgId 7   prompt {dk}     -> expected {testPassed} (VAL, 10)
+
+ekcheck/dkcheck inputs are variable-length (malformed vectors carry wrong
+lengths), so they are emitted as zero-padded [COUNT][MAXLEN] arrays plus a
+per-test length array and a boolean expected-verdict array.
 """
 
 import argparse
@@ -47,6 +53,16 @@ KINDS = {
     "keygen": ("ML-KEM-keyGen-FIPS203", None, ["d", "z"], ["ek", "dk"]),
     "encaps": ("ML-KEM-encapDecap-FIPS203", 1, ["ek", "m"], ["c", "k"]),
     "decaps": ("ML-KEM-encapDecap-FIPS203", 4, ["dk", "c"], ["k"]),
+}
+
+# keyCheck groups: a single (variable-length) input key per test and a boolean
+# `testPassed` verdict. Unlike KINDS the inputs are NOT fixed-length — malformed
+# vectors carry deliberately wrong lengths — so these get their own tables with
+# a per-test length and a zero-padded [COUNT][MAXLEN] data array.
+# name -> (tgId, input field)
+KEYCHECKS = {
+    "ekcheck": (8, "ek"),  # encapsulationKeyCheck — FIPS 203 §7.2
+    "dkcheck": (7, "dk"),  # decapsulationKeyCheck — FIPS 203 §7.3
 }
 
 
@@ -114,6 +130,70 @@ def emit_array(name, count, length, hex_rows, scope="static const"):
         out.append(c_array_body(hex_str, indent="        "))
         out.append("    },")
     out.append("};")
+    return "\n".join(out)
+
+
+def load_keycheck(tg_id, field):
+    """Return (tc_ids, [hex_str], [bool_passed]) for a keyCheck test group."""
+    base = os.path.join(find_files_dir(), "ML-KEM-encapDecap-FIPS203")
+    prompt = json.load(open(os.path.join(base, "prompt.json")))
+    expected = json.load(open(os.path.join(base, "expectedResults.json")))
+    pg = pick_group(prompt, tg_id)
+    eg = pick_group(expected, tg_id)
+    emap = {t["tcId"]: t for t in eg["tests"]}
+
+    tc_ids, hexes, passed = [], [], []
+    for t in pg["tests"]:
+        tc_ids.append(t["tcId"])
+        hexes.append(t[field])
+        passed.append(bool(emap[t["tcId"]]["testPassed"]))
+    return tc_ids, hexes, passed
+
+
+def _int_array(name, dim, values):
+    out = [f"{name}[{dim}] = {{"]
+    for i in range(0, len(values), 10):
+        out.append("    " + ", ".join(str(v) for v in values[i : i + 10]) + ",")
+    out.append("};")
+    return "\n".join(out)
+
+
+def emit_keycheck_header(name, tg_id, field, count, maxlen):
+    up = name.upper()
+    return "\n".join([
+        f"/* {name}: {count} vector(s), tgId {tg_id}; variable-length inputs. */",
+        f"#define KAT_{up}_COUNT {count}",
+        f"#define KAT_{up}_MAXLEN {maxlen}",
+        f"extern const uint8_t kat_{name}_{field}[KAT_{up}_COUNT][KAT_{up}_MAXLEN];",
+        f"extern const size_t kat_{name}_{field}_len[KAT_{up}_COUNT];",
+        f"extern const int kat_{name}_expected[KAT_{up}_COUNT];",
+        f"extern const int kat_{name}_tc_id[KAT_{up}_COUNT];",
+        "",
+    ])
+
+
+def emit_keycheck_source(name, tg_id, field, tc_ids, hexes, passed):
+    up = name.upper()
+    lens = [len(h) // 2 for h in hexes]
+    out = [f"/* --- {name} ({len(tc_ids)} vectors, tgId {tg_id}) --- */", ""]
+    out.append(_int_array(f"const int kat_{name}_tc_id", f"KAT_{up}_COUNT", tc_ids))
+    out.append("")
+    out.append(_int_array(
+        f"const int kat_{name}_expected", f"KAT_{up}_COUNT",
+        [1 if p else 0 for p in passed],
+    ))
+    out.append("")
+    out.append(_int_array(
+        f"const size_t kat_{name}_{field}_len", f"KAT_{up}_COUNT", lens,
+    ))
+    out.append("")
+    # Shorter rows are zero-padded out to MAXLEN by C; the _len array carries
+    # the true length each test must be checked against.
+    out.append(emit_array(
+        f"kat_{name}_{field}", f"KAT_{up}_COUNT", f"KAT_{up}_MAXLEN", hexes,
+        scope="const",
+    ))
+    out.append("")
     return "\n".join(out)
 
 
@@ -192,6 +272,14 @@ def cmd_gen_tables(args):
         tc_ids, rows = load_kind(kind)
         bundle[kind] = (tc_ids, rows)
 
+    keycheck_order = ["ekcheck", "dkcheck"]
+    keycheck_bundle = {}
+    for name in keycheck_order:
+        tg_id, field = KEYCHECKS[name]
+        tc_ids, hexes, passed = load_keycheck(tg_id, field)
+        maxlen = max(len(h) // 2 for h in hexes)
+        keycheck_bundle[name] = (tg_id, field, tc_ids, hexes, passed, maxlen)
+
     # --- header --------------------------------------------------------------
     h_lines = [HEADER_TOP]
     for kind in kinds_order:
@@ -211,6 +299,11 @@ def cmd_gen_tables(args):
             f"extern const int kat_{kind}_tc_id[KAT_{kind.upper()}_COUNT];"
         )
         h_lines.append("")
+    for name in keycheck_order:
+        tg_id, field, tc_ids, _, _, maxlen = keycheck_bundle[name]
+        h_lines.append(
+            emit_keycheck_header(name, tg_id, field, len(tc_ids), maxlen)
+        )
     h_text = "\n".join(h_lines)
 
     # --- source --------------------------------------------------------------
@@ -237,6 +330,11 @@ def cmd_gen_tables(args):
                            scope="const")
             )
             s_lines.append("")
+    for name in keycheck_order:
+        tg_id, field, tc_ids, hexes, passed, _ = keycheck_bundle[name]
+        s_lines.append(
+            emit_keycheck_source(name, tg_id, field, tc_ids, hexes, passed)
+        )
     s_text = "\n".join(s_lines)
 
     h_path = os.path.join(out_dir, "mlkem_kat_vectors.h")

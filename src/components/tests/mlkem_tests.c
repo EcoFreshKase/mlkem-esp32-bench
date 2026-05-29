@@ -248,6 +248,38 @@ static void test_mlkem512_decaps_vectors(void) {
     ESP_LOGI(TAG, "ML-KEM-512 decaps: %d/%d PASS", pass, KAT_DECAPS_COUNT);
 }
 
+/* ACVP encapDecap tgId 8 (encapsulationKeyCheck, VAL, 10 vectors). Each ek is
+ * fed to mlkem512_check_ek; acceptance must match the expected verdict. */
+static void test_mlkem512_ekcheck_vectors(void) {
+    int pass = 0;
+
+    for (size_t i = 0; i < KAT_EKCHECK_COUNT; i++) {
+        int accepted = (mlkem512_check_ek(kat_ekcheck_ek[i], kat_ekcheck_ek_len[i]) == 0);
+        if (accepted == (kat_ekcheck_expected[i] != 0))
+            pass++;
+        else
+            ESP_LOGE(TAG, "ML-KEM-512 ekcheck tcId %d FAIL (got %d, want %d)",
+                     kat_ekcheck_tc_id[i], accepted, kat_ekcheck_expected[i]);
+    }
+    ESP_LOGI(TAG, "ML-KEM-512 ekcheck: %d/%d PASS", pass, KAT_EKCHECK_COUNT);
+}
+
+/* ACVP encapDecap tgId 7 (decapsulationKeyCheck, VAL, 10 vectors). Each dk is
+ * fed to mlkem512_check_dk; acceptance must match the expected verdict. */
+static void test_mlkem512_dkcheck_vectors(void) {
+    int pass = 0;
+
+    for (size_t i = 0; i < KAT_DKCHECK_COUNT; i++) {
+        int accepted = (mlkem512_check_dk(kat_dkcheck_dk[i], kat_dkcheck_dk_len[i]) == 0);
+        if (accepted == (kat_dkcheck_expected[i] != 0))
+            pass++;
+        else
+            ESP_LOGE(TAG, "ML-KEM-512 dkcheck tcId %d FAIL (got %d, want %d)",
+                     kat_dkcheck_tc_id[i], accepted, kat_dkcheck_expected[i]);
+    }
+    ESP_LOGI(TAG, "ML-KEM-512 dkcheck: %d/%d PASS", pass, KAT_DKCHECK_COUNT);
+}
+
 /* Full round-trip: keygen → encaps → decaps; asserts both shared secrets match. */
 static void test_mlkem512_roundtrip(void) {
     static uint8_t ek[MLKEM512_EKBYTES];
@@ -277,6 +309,8 @@ void run_mlkem512_tests(void) {
     test_mlkem512_keygen_vectors();
     test_mlkem512_encaps_vectors();
     test_mlkem512_decaps_vectors();
+    test_mlkem512_ekcheck_vectors();
+    test_mlkem512_dkcheck_vectors();
     test_mlkem512_roundtrip();
     ESP_LOGI(TAG, "=== ML-KEM-512 tests done ===");
 }

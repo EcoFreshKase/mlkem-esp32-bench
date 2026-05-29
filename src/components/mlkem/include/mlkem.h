@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 #include "params.h"
 
@@ -90,3 +91,30 @@ int mlkem512_decaps(
     const uint8_t ct[MLKEM512_CTBYTES],
     const uint8_t dk[MLKEM512_DKBYTES]
 );
+
+/**
+ * Encapsulation key check — FIPS 203 Section 7.2.
+ *
+ * Validates an encapsulation key before use: the length must equal
+ * MLKEM512_EKBYTES (800) and every 12-bit coefficient decoded from t̂ must lie
+ * in [0, q) (the modulus check). Performed at the top of mlkem512_encaps.
+ *
+ * @param[in] ek      Candidate encapsulation key.
+ * @param[in] ek_len  Length of ek in bytes (an explicit length so malformed,
+ *                    wrong-length keys can be rejected).
+ * @return 0 if ek is valid, negative if it must be rejected.
+ */
+int mlkem512_check_ek(const uint8_t *ek, size_t ek_len);
+
+/**
+ * Decapsulation key check — FIPS 203 Section 7.3.
+ *
+ * Validates a decapsulation key before use: the length must equal
+ * MLKEM512_DKBYTES (1632) and the embedded H(ek) must match SHA3-256 of the
+ * embedded ek (the hash check). Performed at the top of mlkem512_decaps.
+ *
+ * @param[in] dk      Candidate decapsulation key.
+ * @param[in] dk_len  Length of dk in bytes.
+ * @return 0 if dk is valid, negative if it must be rejected.
+ */
+int mlkem512_check_dk(const uint8_t *dk, size_t dk_len);

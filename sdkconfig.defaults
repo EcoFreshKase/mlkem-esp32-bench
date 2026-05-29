@@ -15,3 +15,10 @@ CONFIG_ESP32_UART_DEFAULT_TX_RING_BUFFER_SIZE=1024
 # Show Info-level logs and above during benchmarking.
 CONFIG_LOG_DEFAULT_LEVEL_INFO=y
 CONFIG_LOG_DEFAULT_LEVEL=3
+
+# 4 MB flash with a custom partition table: a 3 MB factory app partition holds the
+# shared ACVP + Wycheproof KAT tables (and leaves room for two more ML-KEM-512
+# implementations sharing the same vectors). See partitions.csv.
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"

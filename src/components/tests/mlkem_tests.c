@@ -339,6 +339,49 @@ static void test_wycheproof_ekcheck(void) {
     ESP_LOGI(TAG, "wp ekcheck: %d/%d PASS", pass, KAT_WP_EKCHECK_COUNT);
 }
 
+/* Wycheproof decaps (153 valid vectors). Each vector gives a keygen seed (d‖z),
+ * the expected ek, a ciphertext c, and the expected shared secret K. Regenerate
+ * the key pair from the seed, sanity-check ek, then decapsulate and compare K.
+ * Includes the implicit-rejection edge case (modified ciphertext → K̄). */
+static void test_wycheproof_decaps(void) {
+    uint8_t ek[MLKEM512_EKBYTES];
+    uint8_t dk[MLKEM512_DKBYTES];
+    uint8_t ss[MLKEM512_SSBYTES];
+    int pass = 0;
+
+    for (size_t i = 0; i < KAT_WP_DECAPS_COUNT; i++) {
+        const uint8_t *d = kat_wp_decaps_seed[i];
+        const uint8_t *z = kat_wp_decaps_seed[i] + 32;
+        mlkem512_keygen_internal(ek, dk, d, z);
+        int ek_ok = (memcmp(ek, kat_wp_decaps_ek[i], MLKEM512_EKBYTES) == 0);
+        mlkem512_decaps(ss, kat_wp_decaps_c[i], dk);
+        int ss_ok = (memcmp(ss, kat_wp_decaps_k[i], MLKEM512_SSBYTES) == 0);
+        if (ek_ok && ss_ok)
+            pass++;
+        else
+            ESP_LOGE(TAG, "wp decaps tcId %d FAIL (ek=%d ss=%d)",
+                     kat_wp_decaps_tc_id[i], ek_ok, ss_ok);
+    }
+    ESP_LOGI(TAG, "wp decaps: %d/%d PASS", pass, KAT_WP_DECAPS_COUNT);
+}
+
+/* Wycheproof dk-check (5 semi-expanded decaps keys). Each dk is fed to
+ * mlkem512_check_dk; acceptance must match the expected verdict (tcId 1 accept,
+ * 4/5 wrong-length reject, 6/7 hash-mismatch reject). */
+static void test_wycheproof_dkcheck(void) {
+    int pass = 0;
+
+    for (size_t i = 0; i < KAT_WP_DKCHECK_COUNT; i++) {
+        int accepted = (mlkem512_check_dk(kat_wp_dkcheck_dk[i], kat_wp_dkcheck_dk_len[i]) == 0);
+        if (accepted == (kat_wp_dkcheck_expected[i] != 0))
+            pass++;
+        else
+            ESP_LOGE(TAG, "wp dkcheck tcId %d FAIL (got %d, want %d)",
+                     kat_wp_dkcheck_tc_id[i], accepted, kat_wp_dkcheck_expected[i]);
+    }
+    ESP_LOGI(TAG, "wp dkcheck: %d/%d PASS", pass, KAT_WP_DKCHECK_COUNT);
+}
+
 /* Full round-trip: keygen → encaps → decaps; asserts both shared secrets match. */
 static void test_mlkem512_roundtrip(void) {
     static uint8_t ek[MLKEM512_EKBYTES];
@@ -373,6 +416,8 @@ void run_mlkem512_tests(void) {
     test_wycheproof_keygen();
     test_wycheproof_encaps();
     test_wycheproof_ekcheck();
+    test_wycheproof_decaps();
+    test_wycheproof_dkcheck();
     test_mlkem512_roundtrip();
     ESP_LOGI(TAG, "=== ML-KEM-512 tests done ===");
 }

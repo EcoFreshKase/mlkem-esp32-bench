@@ -67,10 +67,14 @@ KEYCHECKS = {
 
 
 def find_files_dir():
-    """Locate acvp-data/<version>/files, tolerating a changing version dir."""
-    matches = glob.glob(os.path.join(REPO_ROOT, "acvp-data", "*", "files"))
+    """Locate acvp-data/<version>/files, tolerating a changing version dir and
+    a changing parent directory."""
+    matches = glob.glob(
+        os.path.join(REPO_ROOT, "**", "acvp-data", "*", "files"), recursive=True
+    )
+    matches = [m for m in matches if "build" + os.sep not in m]
     if not matches:
-        sys.exit("error: could not find acvp-data/*/files under the repo root")
+        sys.exit("error: could not find **/acvp-data/*/files under the repo root")
     return sorted(matches)[-1]
 
 

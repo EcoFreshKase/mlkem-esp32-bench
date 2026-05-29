@@ -36,11 +36,14 @@ mlkem-esp32-bench/
 ├── CMakeLists.txt              # top-level ESP-IDF project
 ├── sdkconfig.defaults          # 32 KB stack, 240 MHz CPU, 60 s WDT
 ├── NIST-FIPS-203.pdf           # spec
-├── acvp-data/v1.1.0.41/files/  # NIST ACVP KAT vectors
-│   ├── ML-KEM-keyGen-FIPS203/{prompt,expectedResults}.json
-│   └── ML-KEM-encapDecap-FIPS203/{prompt,expectedResults}.json
+├── test-data/                  # all test vectors live here
+│   ├── acvp-data/v1.1.0.41/files/  # NIST ACVP KAT vectors
+│   │   ├── ML-KEM-keyGen-FIPS203/{prompt,expectedResults}.json
+│   │   └── ML-KEM-encapDecap-FIPS203/{prompt,expectedResults}.json
+│   └── wycheproof/.wycheproof-data/  # Google/C2SP Wycheproof ML-KEM-512 vectors
 ├── scripts/
-│   └── convert_acvp_vector_to_source_code.py
+│   ├── convert_acvp_vector_to_source_code.py
+│   └── convert_wycheproof_vector_to_source_code.py
 ├── src/
 │   ├── main/main.c
 │   ├── util/                   # mod_power_of_two helper

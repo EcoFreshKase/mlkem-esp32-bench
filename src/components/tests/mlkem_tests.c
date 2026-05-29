@@ -3,6 +3,7 @@
 #include "esp_log.h"
 #include "mlkem.h"
 #include "mlkem_kat_vectors.h"
+#include "mlkem_wycheproof_vectors.h"
 #include "ntt.h"
 #include "params.h"
 #include "poly.h"
@@ -280,6 +281,64 @@ static void test_mlkem512_dkcheck_vectors(void) {
     ESP_LOGI(TAG, "ML-KEM-512 dkcheck: %d/%d PASS", pass, KAT_DKCHECK_COUNT);
 }
 
+/* Wycheproof keygen (100 valid vectors). Each seed (64 B) is d‖z; feed to
+ * mlkem512_keygen_internal and compare (ek, dk) against expected. */
+static void test_wycheproof_keygen(void) {
+    uint8_t ek[MLKEM512_EKBYTES];
+    uint8_t dk[MLKEM512_DKBYTES];
+    int pass = 0;
+
+    for (size_t i = 0; i < KAT_WP_KEYGEN_COUNT; i++) {
+        const uint8_t *d = kat_wp_keygen_seed[i];
+        const uint8_t *z = kat_wp_keygen_seed[i] + 32;
+        mlkem512_keygen_internal(ek, dk, d, z);
+        int ek_ok = (memcmp(ek, kat_wp_keygen_ek[i], MLKEM512_EKBYTES) == 0);
+        int dk_ok = (memcmp(dk, kat_wp_keygen_dk[i], MLKEM512_DKBYTES) == 0);
+        if (ek_ok && dk_ok)
+            pass++;
+        else
+            ESP_LOGE(TAG, "wp keygen tcId %d FAIL (ek=%d dk=%d)",
+                     kat_wp_keygen_tc_id[i], ek_ok, dk_ok);
+    }
+    ESP_LOGI(TAG, "wp keygen: %d/%d PASS", pass, KAT_WP_KEYGEN_COUNT);
+}
+
+/* Wycheproof encaps (133 valid vectors). Feed (ek, m) to
+ * mlkem512_encaps_internal and compare (c, k). */
+static void test_wycheproof_encaps(void) {
+    uint8_t ct[MLKEM512_CTBYTES];
+    uint8_t ss[MLKEM512_SSBYTES];
+    int pass = 0;
+
+    for (size_t i = 0; i < KAT_WP_ENCAPS_COUNT; i++) {
+        mlkem512_encaps_internal(ct, ss, kat_wp_encaps_ek[i], kat_wp_encaps_m[i]);
+        int ct_ok = (memcmp(ct, kat_wp_encaps_c[i], MLKEM512_CTBYTES) == 0);
+        int ss_ok = (memcmp(ss, kat_wp_encaps_k[i], MLKEM512_SSBYTES) == 0);
+        if (ct_ok && ss_ok)
+            pass++;
+        else
+            ESP_LOGE(TAG, "wp encaps tcId %d FAIL (ct=%d ss=%d)",
+                     kat_wp_encaps_tc_id[i], ct_ok, ss_ok);
+    }
+    ESP_LOGI(TAG, "wp encaps: %d/%d PASS", pass, KAT_WP_ENCAPS_COUNT);
+}
+
+/* Wycheproof ek-check (128 invalid encaps keys). Each ek is fed to
+ * mlkem512_check_ek; all must be rejected. */
+static void test_wycheproof_ekcheck(void) {
+    int pass = 0;
+
+    for (size_t i = 0; i < KAT_WP_EKCHECK_COUNT; i++) {
+        int accepted = (mlkem512_check_ek(kat_wp_ekcheck_ek[i], kat_wp_ekcheck_ek_len[i]) == 0);
+        if (accepted == (kat_wp_ekcheck_expected[i] != 0))
+            pass++;
+        else
+            ESP_LOGE(TAG, "wp ekcheck tcId %d FAIL (got %d, want %d)",
+                     kat_wp_ekcheck_tc_id[i], accepted, kat_wp_ekcheck_expected[i]);
+    }
+    ESP_LOGI(TAG, "wp ekcheck: %d/%d PASS", pass, KAT_WP_EKCHECK_COUNT);
+}
+
 /* Full round-trip: keygen → encaps → decaps; asserts both shared secrets match. */
 static void test_mlkem512_roundtrip(void) {
     static uint8_t ek[MLKEM512_EKBYTES];
@@ -311,6 +370,9 @@ void run_mlkem512_tests(void) {
     test_mlkem512_decaps_vectors();
     test_mlkem512_ekcheck_vectors();
     test_mlkem512_dkcheck_vectors();
+    test_wycheproof_keygen();
+    test_wycheproof_encaps();
+    test_wycheproof_ekcheck();
     test_mlkem512_roundtrip();
     ESP_LOGI(TAG, "=== ML-KEM-512 tests done ===");
 }

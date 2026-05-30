@@ -6,13 +6,6 @@
 
 static const char *TAG = "fips202_test";
 
-static void print_hex(const char *label, const uint8_t *buf, size_t len) {
-    printf("%s: ", label);
-    for (size_t i = 0; i < len; i++)
-        printf("%02x", buf[i]);
-    printf("\n");
-}
-
 static void test_sha3_256(void) {
     /* NIST FIPS 202 Appendix A, example message "abc". */
     static const uint8_t expected[32] = {
@@ -24,7 +17,6 @@ static void test_sha3_256(void) {
     const uint8_t msg[] = "abc";
     uint8_t out[32];
     sha3_256(out, msg, 3);
-    print_hex("SHA3-256(\"abc\")", out, sizeof(out));
 
     if (memcmp(out, expected, sizeof(out)) == 0)
         ESP_LOGI(TAG, "SHA3-256 PASS");
@@ -45,7 +37,6 @@ static void test_sha3_512(void) {
     const uint8_t msg[] = "abc";
     uint8_t out[64];
     sha3_512(out, msg, 3);
-    print_hex("SHA3-512(\"abc\")", out, sizeof(out));
 
     if (memcmp(out, expected, sizeof(out)) == 0)
         ESP_LOGI(TAG, "SHA3-512 PASS");
@@ -64,7 +55,6 @@ static void test_shake256(void) {
     const uint8_t msg[] = "abc";
     uint8_t out[32];
     shake256(out, sizeof(out), msg, 3);
-    print_hex("SHAKE256(\"abc\", 32)", out, sizeof(out));
 
     if (memcmp(out, expected, sizeof(out)) == 0)
         ESP_LOGI(TAG, "SHAKE256 PASS");

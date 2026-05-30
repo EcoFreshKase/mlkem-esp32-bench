@@ -15,12 +15,10 @@ void bench_run_keygen(uint32_t iterations) {
     static uint8_t ek[MLKEM512_EKBYTES];
     static uint8_t dk[MLKEM512_DKBYTES];
 
-    ESP_LOGI(TAG, "Warming up keygen (%d iters)...", BENCH_WARMUP_ITERS);
     for (int i = 0; i < BENCH_WARMUP_ITERS; i++) {
         mlkem512_keygen(ek, dk);
     }
 
-    ESP_LOGI(TAG, "Measuring keygen (%lu iters)...", (unsigned long)iterations);
     for (uint32_t i = 0; i < iterations; i++) {
         uint32_t t0 = esp_cpu_get_cycle_count();
         mlkem512_keygen(ek, dk);
@@ -43,12 +41,10 @@ void bench_run_encaps(uint32_t iterations) {
 
     mlkem512_keygen(ek, dk);
 
-    ESP_LOGI(TAG, "Warming up encaps (%d iters)...", BENCH_WARMUP_ITERS);
     for (int i = 0; i < BENCH_WARMUP_ITERS; i++) {
         mlkem512_encaps(ct, ss, ek);
     }
 
-    ESP_LOGI(TAG, "Measuring encaps (%lu iters)...", (unsigned long)iterations);
     for (uint32_t i = 0; i < iterations; i++) {
         uint32_t t0 = esp_cpu_get_cycle_count();
         mlkem512_encaps(ct, ss, ek);
@@ -72,12 +68,10 @@ void bench_run_decaps(uint32_t iterations) {
     mlkem512_keygen(ek, dk);
     mlkem512_encaps(ct, ss, ek);
 
-    ESP_LOGI(TAG, "Warming up decaps (%d iters)...", BENCH_WARMUP_ITERS);
     for (int i = 0; i < BENCH_WARMUP_ITERS; i++) {
         mlkem512_decaps(ss, ct, dk);
     }
 
-    ESP_LOGI(TAG, "Measuring decaps (%lu iters)...", (unsigned long)iterations);
     for (uint32_t i = 0; i < iterations; i++) {
         uint32_t t0 = esp_cpu_get_cycle_count();
         mlkem512_decaps(ss, ct, dk);

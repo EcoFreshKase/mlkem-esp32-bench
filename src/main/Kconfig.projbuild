@@ -1,0 +1,18 @@
+menu "ML-KEM build mode"
+
+    choice MLKEM_BUILD_MODE
+        prompt "What to run at startup"
+        default MLKEM_BUILD_MODE_TEST
+        help
+            TEST  — KAT and unit tests; benchmark code excluded from the binary.
+            BENCH — cycle-accurate CSV benchmarks; ~800 KB test-vector tables excluded.
+
+        config MLKEM_BUILD_MODE_TEST
+            bool "Test (KAT and unit tests)"
+
+        config MLKEM_BUILD_MODE_BENCH
+            bool "Benchmark (CSV timing output)"
+
+    endchoice
+
+endmenu

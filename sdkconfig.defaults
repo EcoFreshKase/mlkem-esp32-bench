@@ -22,3 +22,8 @@ CONFIG_LOG_DEFAULT_LEVEL=3
 CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 CONFIG_PARTITION_TABLE_CUSTOM=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# Build mode (see src/main/Kconfig.projbuild): TEST runs KAT/unit tests, BENCH runs
+# the cycle-accurate CSV benchmarks. Default to TEST; run_bench.sh chains
+# sdkconfig.defaults.bench to switch to BENCH.
+CONFIG_MLKEM_BUILD_MODE_TEST=y

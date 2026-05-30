@@ -14,8 +14,7 @@ void app_main(void) {
     vTaskDelay(pdMS_TO_TICKS(200));
 
     bench_run_all(BENCH_MEASURE_ITERS);
+    ESP_LOGI(TAG, "Benchmark complete.");
 
     run_all_tests();
-
-    ESP_LOGI(TAG, "Benchmark complete.");
 }
